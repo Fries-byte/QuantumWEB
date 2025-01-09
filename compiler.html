@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Compiler</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="hexagon">
+                    <a href="index.html">
+                        <img src="Qlogo.png" alt="Quantum Logo" style="width: 50px;">
+                    </a>
+                </div>
+                <span>uantum</span>
+            </div>
+            <nav class="nav-links">
+                <a href="compiler.html">Compiler</a>
+                <a href="license.html">License</a>
+                <a href="https://github.com/seba495g/Quantum/blob/main/README.md">ReadMe.md</a>
+                <a href="help.html">Help</a>
+                <a href="download.html">Download</a>
+                <a href="credits.html">GitHub Contributor(s)</a>
+                <a href="about.html">About</a>
+            </nav>
+        </header>
+        <hr>
+        <h1>Quantum Compiler (in-dev)</h1>
+        <main class="content">
+            <textarea id="compile" placeholder="&gitport quaio.qh..." rows="5" style="width: 100%;"></textarea>
+            <br>
+            <button id="compileButton">Compile</button>
+            <button id="shareButton">Share Code</button>
+        </main>
+        <center>
+            <p id="output" style="color: rgb(20, 20, 20); font-weight: bold;"></p>
+        </center>
+        <br>
+        <footer class="footer">
+            <p>Published with <b>GitHub</b></p>
+        </footer>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const compileButton = document.getElementById('compileButton');
+            const compileTextarea = document.getElementById('compile');
+            const outputElement = document.getElementById('output');
+
+            let variables = {};
+
+            function parseAndRun(code) {
+                const lines = code.split('\n');
+                let outputText = "";
+                let currentBlock = null;
+
+                const executeLine = (line) => {
+                    line = line.trim();
+
+                    // Variable Assignment
+                    if (line.startsWith("int ")) {
+                        const match = line.match(/int (\w+) = (.+)/);
+                        if (match) {
+                            const [, variable, value] = match;
+                            variables[variable] = value.trim();
+                        } else {
+                            outputText += "Error: Invalid variable declaration.\n";
+                        }
+                    }
+
+                    // Input
+                    else if (line.startsWith("q:in >>")) {
+                        const promptMessage = line.split("q:in >>")[1]?.trim();
+                        const userInput = prompt(promptMessage) || "undefined";
+                        outputText += `Input received: ${userInput}\n`;
+                    }
+
+                    // Output
+                    else if (line.startsWith("q:out >>")) {
+                        const message = line.split("q:out >>")[1]?.trim();
+                        outputText += `${message}\n`;
+                    }
+
+                    // Web Open
+                    else if (line.startsWith("webopen >>")) {
+                        const url = line.split("webopen >>")[1]?.trim();
+                        window.open(url, "_blank");
+                        outputText += `Opened URL: ${url}\n`;
+                    }
+                };
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+
+                    // Start of an `if` block
+                    if (line.startsWith("if ")) {
+                        const match = line.match(/if (\w+) == (.+)/);
+                        if (match) {
+                            const [, variable, expectedValue] = match;
+                            if (variables[variable] === expectedValue.trim()) {
+                                currentBlock = { start: i + 1, isActive: true };
+                            } else {
+                                currentBlock = { start: i + 1, isActive: false };
+                            }
+                        } else {
+                            outputText += `Error: Invalid if statement at line ${i + 1}.\n`;
+                        }
+                    }
+
+                    // Inside an `if` block
+                    else if (currentBlock && line.startsWith("    ")) {
+                        if (currentBlock.isActive) {
+                            executeLine(line.trim());
+                        }
+                    }
+
+                    // End of an `if` block (non-indented line or end of file)
+                    else if (currentBlock && !line.startsWith("    ")) {
+                        currentBlock = null;
+                        executeLine(line); // Execute the line outside the block
+                    }
+
+                    // Regular line
+                    else {
+                        executeLine(line);
+                    }
+                }
+
+                outputElement.innerText = outputText.trim();
+            }
+
+            compileButton.addEventListener('click', () => {
+                const code = compileTextarea.value;
+                parseAndRun(code);
+            });
+        });
+    </script>    
+</body>
+</html>
